@@ -446,10 +446,14 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 # Run the bot
+from keep_alive import keep_alive
+
 if __name__ == "__main__":
     token = os.getenv('DISCORD_BOT_TOKEN')
     if not token:
         logger.error("DISCORD_BOT_TOKEN environment variable is required")
         exit(1)
-    
+
+    keep_alive()  # Prevents bot from sleeping on Render
     bot.run(token)
+
