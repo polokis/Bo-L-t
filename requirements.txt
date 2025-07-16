@@ -2,5 +2,5 @@ discord.py
 aiohttp
 beautifulsoup4
 trafilatura
-deep-translator
 flask
+deep-translator
