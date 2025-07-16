@@ -1,4 +1,4 @@
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 import logging
 from typing import Dict, Optional
 import asyncio
@@ -10,7 +10,7 @@ class RTanksTranslator:
     """Translator for RTanks Online Russian content to English"""
     
     def __init__(self):
-        self.translator = Translator()
+        self.translator = GoogleTranslator(source='auto', target='en')
         self.cache = {}
         
         # Pre-defined translations for common terms
@@ -64,22 +64,17 @@ class RTanksTranslator:
         }
     
     def translate_rank(self, rank_text: str) -> str:
-        """Translate rank name from Russian to English"""
         if not rank_text:
             return 'Unknown Rank'
         
-        # Normalize the text
         normalized = rank_text.lower().strip()
         
-        # Check pre-defined translations first
         if normalized in self.rank_translations:
             return self.rank_translations[normalized].title()
         
-        # If it's already in English, return as-is
         if all(ord(char) < 128 for char in rank_text):
             return rank_text.title()
         
-        # Try Google Translate
         try:
             translated = self._translate_text_sync(rank_text)
             return translated.title() if translated else rank_text
@@ -88,27 +83,22 @@ class RTanksTranslator:
             return rank_text
     
     def translate_text(self, text: str) -> str:
-        """Translate general text from Russian to English"""
         if not text:
             return ''
         
-        # Check cache first
         if text in self.cache:
             return self.cache[text]
         
-        # If it's already in English, return as-is
         if all(ord(char) < 128 for char in text if char.isalpha()):
             self.cache[text] = text
             return text
         
-        # Check for common translations
         normalized = text.lower().strip()
         if normalized in self.common_translations:
             result = self.common_translations[normalized]
             self.cache[text] = result
             return result
         
-        # Use Google Translate
         try:
             translated = self._translate_text_sync(text)
             if translated:
@@ -117,54 +107,28 @@ class RTanksTranslator:
         except Exception as e:
             logger.warning(f"Failed to translate text '{text}': {e}")
         
-        # Return original if translation fails
         return text
     
     def _translate_text_sync(self, text: str) -> Optional[str]:
-        """Synchronous translation using Google Translate"""
         try:
-            # Detect language first
-            detection = self.translator.detect(text)
-            
-            # Only translate if it's Russian
-            if detection.lang == 'ru':
-                result = self.translator.translate(text, src='ru', dest='en')
-                return result.text
-            else:
-                return text
-                
+            return self.translator.translate(text)
         except Exception as e:
             logger.error(f"Translation error: {e}")
             return None
     
     async def translate_text_async(self, text: str) -> str:
-        """Asynchronous wrapper for text translation"""
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None, 
-            functools.partial(self.translate_text, text)
-        )
+        return await loop.run_in_executor(None, functools.partial(self.translate_text, text))
     
     def translate_equipment(self, equipment_data: Dict) -> Dict:
-        """Translate equipment/loadout information"""
         translated = {}
-        
         for key, value in equipment_data.items():
-            # Translate key
             translated_key = self.translate_text(key)
-            
-            # Translate value if it's a string
-            if isinstance(value, str):
-                translated_value = self.translate_text(value)
-            else:
-                translated_value = value
-            
+            translated_value = self.translate_text(value) if isinstance(value, str) else value
             translated[translated_key] = translated_value
-        
         return translated
     
     def get_weapon_translation(self, weapon_name: str) -> str:
-        """Get English translation for weapon names"""
         weapon_translations = {
             'смоки': 'smoky',
             'рикошет': 'ricochet', 
@@ -175,12 +139,10 @@ class RTanksTranslator:
             'фриз': 'freeze',
             'изида': 'isida'
         }
-        
         normalized = weapon_name.lower().strip()
         return weapon_translations.get(normalized, weapon_name).title()
     
     def get_hull_translation(self, hull_name: str) -> str:
-        """Get English translation for hull names"""
         hull_translations = {
             'хантер': 'hunter',
             'васп': 'wasp',
@@ -188,6 +150,5 @@ class RTanksTranslator:
             'диктатор': 'dictator',
             'хорнет': 'hornet'
         }
-        
         normalized = hull_name.lower().strip()
         return hull_translations.get(normalized, hull_name).title()
