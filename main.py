@@ -81,11 +81,11 @@ def get_rank_emoji(rank_name: str) -> str:
         return "❓"
 
 def create_player_embed(player_data: dict) -> discord.Embed:
-    """Create a Discord embed for player statistics"""
-    
+    """Create a Discord embed for player statistics with activity status"""
+
     # Get rank emoji
     rank_emoji = get_rank_emoji(player_data.get('rank', ''))
-    
+
     # Create embed with player info
     embed = discord.Embed(
         title=f"{rank_emoji} {player_data['nickname']}",
@@ -93,68 +93,77 @@ def create_player_embed(player_data: dict) -> discord.Embed:
         color=0x00ff00,
         timestamp=datetime.utcnow()
     )
-    
+
     # Main statistics section
     embed.add_field(
-        name="⭐ Experience", 
-        value=f"{player_data.get('experience', 'N/A'):,}", 
+        name="⭐ Experience",
+        value=f"{player_data.get('experience', 'N/A'):,}",
         inline=True
     )
-    
+
     embed.add_field(
-        name="💎 Crystals Position", 
-        value=f"#{player_data.get('crystals_rank', 'N/A')}" if player_data.get('crystals_rank', 'N/A') != 'N/A' else 'N/A', 
+        name="💎 Crystals Position",
+        value=f"#{player_data.get('crystals_rank', 'N/A')}" if player_data.get('crystals_rank', 'N/A') != 'N/A' else 'N/A',
         inline=True
     )
-    
+
     embed.add_field(
-        name="⚔️ Kills", 
-        value=f"{player_data.get('kills', 'N/A'):,}", 
+        name="⚔️ Kills",
+        value=f"{player_data.get('kills', 'N/A'):,}",
         inline=True
     )
-    
+
     embed.add_field(
-        name="💀 Deaths", 
-        value=f"{player_data.get('deaths', 'N/A'):,}", 
+        name="💀 Deaths",
+        value=f"{player_data.get('deaths', 'N/A'):,}",
         inline=True
     )
-    
+
     embed.add_field(
-        name="📊 K/D Ratio", 
-        value=f"{player_data.get('kd_ratio', 'N/A')}", 
+        name="📊 K/D Ratio",
+        value=f"{player_data.get('kd_ratio', 'N/A')}",
         inline=True
     )
-    
+
     embed.add_field(
-        name="🏆 Efficiency Rank", 
-        value=f"#{player_data.get('efficiency_rank', 'N/A')}" if player_data.get('efficiency_rank', 'N/A') != 'N/A' else 'N/A', 
+        name="🏆 Efficiency Rank",
+        value=f"#{player_data.get('efficiency_rank', 'N/A')}" if player_data.get('efficiency_rank', 'N/A') != 'N/A' else 'N/A',
         inline=True
     )
-    
+
     # Add premium status
     premium_emoji = "👑" if player_data.get('premium') else "❌"
     embed.add_field(
-        name="💳 Premium Status", 
-        value=f"{premium_emoji} {'Premium' if player_data.get('premium') else 'Free'}", 
+        name="💳 Premium Status",
+        value=f"{premium_emoji} {'Premium' if player_data.get('premium') else 'Free'}",
         inline=True
     )
-    
+
     # Add goldboxes with emoji
     from config import GOLDBOX_EMOJI
     embed.add_field(
-        name=f"{GOLDBOX_EMOJI} Gold Boxes", 
-        value=f"{player_data.get('goldboxes', 'N/A')}", 
+        name=f"{GOLDBOX_EMOJI} Gold Boxes",
+        value=f"{player_data.get('goldboxes', 'N/A')}",
         inline=True
     )
-    
+
     # Add group/player type
     embed.add_field(
-        name="👥 Group", 
-        value="Player", 
+        name="👥 Group",
+        value="Player",
         inline=True
     )
-    
-    # Add current rankings section (translate to English)
+
+    # Add activity status
+    activity_status = player_data.get('activity', 'Unknown')
+    activity_emoji = "🟢" if activity_status == 'Online' else "⚪" if activity_status == 'Offline' else "❔"
+    embed.add_field(
+        name="🟣 Activity Status",
+        value=f"{activity_emoji} {activity_status}",
+        inline=True
+    )
+
+    # Add current rankings section
     rankings_data = []
     if player_data.get('experience_rank') and player_data.get('experience_rank') != 'N/A':
         rankings_data.append(f"By experience: #{player_data.get('experience_rank')}")
@@ -164,26 +173,27 @@ def create_player_embed(player_data: dict) -> discord.Embed:
         rankings_data.append(f"By kills: #{player_data.get('kills_rank')}")
     if player_data.get('efficiency_rank') and player_data.get('efficiency_rank') != 'N/A':
         rankings_data.append(f"By efficiency: #{player_data.get('efficiency_rank')}")
-    
+
     if rankings_data:
         embed.add_field(
-            name="🏆 Current Rankings", 
-            value="\n".join(rankings_data), 
+            name="🏆 Current Rankings",
+            value="\n".join(rankings_data),
             inline=False
         )
-    
+
     # Add equipment info if available
     if player_data.get('equipment'):
         equipment_text = translator.translate_text(player_data['equipment'])
         embed.add_field(
-            name="🛡️ Current Equipment", 
-            value=equipment_text, 
+            name="🛡️ Current Equipment",
+            value=equipment_text,
             inline=False
         )
-    
+
     embed.set_footer(text="RTanks Online Statistics", icon_url="https://ratings.ranked-rtanks.online/public/images/logo.png")
-    
+
     return embed
+
 
 @bot.tree.command(name="player", description="Get RTanks Online player statistics")
 @discord.app_commands.describe(nickname="The player's nickname to look up")
